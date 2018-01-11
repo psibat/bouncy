@@ -1,0 +1,130 @@
+<head>
+    <title>Game</title>
+    <script>
+        var canvas;
+        var xDebug;
+        var canvasY = 100;
+        var canvasX = canvasY * 2.5;
+        var accel = canvasY * 0.006;
+        var difficulty = canvasY * 0.2;
+        var score = 0;
+        var spawnFrequency = 30;
+        var spawn = 0;
+        
+        function init() {
+            elem = document.getElementById('game');
+            elem.setAttribute("height", canvasY);
+            elem.setAttribute("width", canvasX);
+            canvas = elem.getContext('2d');
+            scoreElem = document.getElementById('score');
+            xDebug = document.getElementById('x-val');
+            setInterval(function() {
+                update();
+                draw();
+            }, 1000/30);
+        }
+        
+        function update() {
+            player.update();
+            for (i in obstacles) {
+                obstacles[i].update();
+            }
+            spawn++;
+            if (spawn > spawnFrequency) {
+                spawn = 0;
+                obstacles.push(new Obstacle());
+                console.log(obstacles);
+            }
+        }
+        
+        function draw() {
+            canvas.clearRect(0, 0, canvasX, canvasY);
+            player.draw();
+            for (i in obstacles) {
+                obstacles[i].draw();
+            }
+            xDebug.innerHTML = player.y.toFixed(1);
+            scoreElem.innerHTML = score;
+        
+        }
+        
+        function gameOver() {
+            window.alert("Game Over");
+            score = 0;
+            player.y = canvasY * 0.5;
+            obstacles = [new Obstacle()];
+        }
+        
+        var player = {
+            x: canvasY * 0.5,
+            y: canvasY * 0.5,
+            size: canvasY * 0.05,
+            velocity: 0,
+            draw: function () {
+                canvas.fillStyle = "#F00";
+                canvas.fillRect(this.x, this.y, this.size, this.size);
+            },
+            fall: function () {
+                this.velocity += accel;
+                this.y += this.velocity;
+                this.y = Math.min(this.y, canvasY - this.size);
+            },
+            update: function () {
+                this.fall();
+            }
+        }
+        
+        function Obstacle() {
+            this.x = canvasX;
+            this.size = Math.max(20 - score * 0.2, player.size * 1.2);
+            this.open = Math.random() * ((canvasY - this.size - player.size) - player.size) + player.size;
+            this.close = this.open + this.size;
+            this.passed = false;
+            this.draw = function () {
+                canvas.fillStyle = "#0F0";
+                canvas.fillRect(this.x, 0, 5, this.open);
+                canvas.fillRect(this.x, this.close, 5, canvasY - this.close);
+            };
+            this.move = function () {
+                this.x -= 5;
+            };
+            this.update = function () {
+                this.move();
+                if (this.x <= 0) {
+                    obstacles.shift();
+                }
+                if (!this.passed && this.x < player.x) {
+                    this.passed = true;
+                    score++;
+                }
+                if (player.x == this.x) {
+                    if (player.y < this.open || player.y > this.close) {
+                        gameOver();
+                    }
+                }
+            }
+        }
+        
+        var obstacles = [];
+        obstacles.push(new Obstacle());
+        
+        window.addEventListener("keydown", function (event) {
+            if (event.defaultPrevented) {
+                return;
+            }
+          
+            switch (event.key) {
+                case " ":
+                    player.velocity = -3;
+                    break;
+                default:
+                    return;
+            }
+            event.preventDefault();
+        }, true);
+    </script>
+</head>
+<body onload="init();">
+    <canvas id="game" style="border: 1px solid black;"></canvas> <br/>
+    <span id="score"/><span id="x-val"/>
+</body>
